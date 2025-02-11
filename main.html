@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cheeseburger Empire</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Basic resets and body styling */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #6a3093, #a044ff);
+      color: #fff;
+      line-height: 1.5;
+      overflow-y: scroll; /* Enable vertical scrolling */
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none;  /* IE and Edge */
+    }
+    body::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, Opera */
+    }
+    /* Containers get a fade-in effect */
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      color: #333;
+      animation: fadeIn 0.5s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* STAT CARD STYLING */
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: #fff;
+      color: #4a148c;
+      padding: 10px 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 1.2em;
+      transition: transform 0.3s ease, background-color 0.3s ease;
+    }
+    .stat-card .stat-number {
+      font-weight: bold;
+    }
+    /* Pop animation when numbers update */
+    .pop {
+      animation: popAnimation 0.3s ease-out;
+    }
+    @keyframes popAnimation {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.3); }
+      100% { transform: scale(1); }
+    }
+    /* Header and section animations */
+    #startScreen h1 {
+      font-size: 2.8em;
+      margin-bottom: 20px;
+      color: #4a148c;
+      animation: slideDown 0.5s ease-out;
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    h1, h2, h3 {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    h1 { font-size: 2.5em; }
+    h2 { color: #4a148c; }
+    h3 { color: #6a1b9a; }
+    .controls {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    /* Grid for main game content */
+    #mainGame {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    @media (min-width: 768px) {
+      #mainGame {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    #leftColumn, #rightColumn {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .section {
+      background: #f3e5f5;
+      border: 1px solid #ce93d8;
+      border-radius: 8px;
+      padding: 15px;
+      animation: fadeIn 0.5s ease-out;
+    }
+    .section h3 { margin-bottom: 10px; }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .row p { flex: 1; margin: 5px 0; }
+    /* Button styling with hover animation */
+    button {
+      background: #8e24aa;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 15px;
+      font-size: 1em;
+      cursor: pointer;
+      margin: 5px;
+      transition: background 0.3s ease, transform 0.2s ease;
+      position: relative;
+    }
+    button:hover {
+      background: #6a1b9a;
+      transform: scale(1.05);
+    }
+    button:disabled {
+      background: #555 !important;
+      color: #ccc !important;
+      cursor: not-allowed;
+      transform: none;
+    }
+    button[data-tooltip] {
+      position: relative;
+    }
+    button[data-tooltip]::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      font-size: 0.8em;
+      z-index: 10;
+    }
+    button[data-tooltip]:hover::after {
+      opacity: 1;
+    }
+    /* Graph container styling */
+    .graphs {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 0.5s ease-out;
+    }
+    @media (min-width: 768px) {
+      .graphs {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    .graphs canvas {
+      width: 100% !important;
+      height: 100% !important;
+      background: #fff;
+      border: 10px solid #ccc;
+      border-radius: 5px;
+    }
+    /* Video tab styling */
+    /* Right Video Tab */
+    #videoTab {
+      position: fixed;
+      top: 10%;
+      right: -300px;
+      width: 300px;
+      height: 80%;
+      background: none;
+      box-shadow: none;
+      border-radius: 8px 0 0 8px;
+      transition: right 0.3s;
+      z-index: 1000;
+    }
+    #videoTab.open {
+      right: 0;
+    }
+    /* Left Video Tab */
+    #videoTabLeft {
+      position: fixed;
+      top: 10%;
+      left: -300px;
+      width: 300px;
+      height: 80%;
+      background: none;
+      box-shadow: none;
+      border-radius: 0 8px 8px 0;
+      transition: left 0.3s;
+      z-index: 1000;
+    }
+    #videoTabLeft.open {
+       left: 0;
+    }
+    #videoContent, #videoContentLeft {
+      width: 100%;
+      height: 90%;
+    }
+    #videoContent iframe, #videoContentLeft iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 8px 8px 0 0;
+    }
+    /* Video toggle buttons for side panels */
+    #videoTab #videoToggle {
+      position: absolute;
+      top: 50%;
+      left: -40px;
+      width: 40px;
+      height: 40px;
+      background: #8e24aa;
+      color: #fff;
+      border: none;
+      border-radius: 5px 0 0 5px;
+      cursor: pointer;
+      transform: translateY(-50%);
+      transition: background 0.3s;
+    }
+    #videoTabLeft #videoToggleLeft {
+      position: absolute;
+      top: 50%;
+      right: -40px;
+      width: 40px;
+      height: 40px;
+      background: #8e24aa;
+      color: #fff;
+      border: none;
+      border-radius: 0 5px 5px 0;
+      cursor: pointer;
+      transform: translateY(-50%);
+      transition: background 0.3s;
+    }
+    #videoTab #videoToggle:hover, #videoTabLeft #videoToggleLeft:hover {
+      background: #6a1b9a;
+    }
+    /* Bottom Video Tabs Styling */
+    /* Bottom Left Video Tab */
+    #videoTabBottomLeft {
+      position: fixed;
+      bottom: -170px;
+      left: 20px;
+      width: 300px;
+      height: 170px;
+      background: none;
+      box-shadow: none;
+      border-radius: 8px 8px 0 0;
+      transition: bottom 0.3s;
+      z-index: 1000;
+    }
+    #videoTabBottomLeft.open {
+      bottom: 0;
+    }
+    /* Bottom Right Video Tab */
+    #videoTabBottomRight {
+      position: fixed;
+      bottom: -170px;
+      right: 20px;
+      width: 300px;
+      height: 170px;
+      background: none;
+      box-shadow: none;
+      border-radius: 8px 8px 0 0;
+      transition: bottom 0.3s;
+      z-index: 1000;
+    }
+    #videoTabBottomRight.open {
+      bottom: 0;
+    }
+    #videoContentBottomLeft, #videoContentBottomRight {
+      width: 100%;
+      height: 90%;
+    }
+    #videoContentBottomLeft iframe, #videoContentBottomRight iframe {
+      width: 105%;
+      height: 115%;
+      border: none;
+      border-radius: 8px 8px 0 0;
+    }
+    /* Toggle buttons for bottom panels */
+    #videoTabBottomLeft #videoToggleBottomLeft,
+    #videoTabBottomRight #videoToggleBottomRight {
+      position: absolute;
+      top: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 40px;
+      background: #8e24aa;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    #videoTabBottomLeft #videoToggleBottomLeft:hover,
+    #videoTabBottomRight #videoToggleBottomRight:hover {
+      background: #6a1b9a;
+    }
+  </style>
+</head>
+<body>
+  <!-- Start Screen -->
+  <div id="startScreen" class="container">
+    <h1 id="welcomeTitle">Welcome to Cheeseburger Empire</h1>
+    <p id="welcomeDescription" style="text-align: center;">
+      Build your challenging burger empire in a world of rising costs, relentless inflation, and ruthless upgrades!
+    </p>
+    <div style="text-align: center;">
+      <button id="startButton" data-tooltip="Click to begin your burger adventure">Start Game</button>
+    </div>
+  </div>
+
+  <!-- Main Game Container -->
+  <div id="gameContainer" class="container" style="display: none;">
+    <h1 id="gameTitle">Cheeseburger Empire</h1>
+    <!-- Prettier Stat Display using stat cards -->
+    <div class="stats">
+      <div class="stat-card">
+        <span class="stat-label" id="cheeseburgersLabel">Cheeseburgers:</span>
+        <span class="stat-number" id="cheeseburgers">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label" id="fundsLabel">Funds:</span>
+        $<span class="stat-number" id="funds">100.00</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label" id="inflationRateLabel">Inflation Rate:</span>
+        <span class="stat-number" id="inflationRateDisplay">1.00</span>%
+      </div>
+    </div>
+    <div class="controls">
+      <button id="makeCheeseburgerButton" data-tooltip="Make a cheeseburger (uses one patty)" onclick="makeCheeseburger()">Make Cheeseburger</button>
+    </div>
+    <div id="mainGame">
+      <div id="leftColumn">
+        <div class="section" id="salesSection">
+          <h3 id="salesHeader">Sales & Business</h3>
+          <div class="row">
+            <p><span id="revenueLabel">Revenue/sec:</span> $<span class="stat-number" id="revenue">0.00</span></p>
+            <p><span id="burgersSoldLabel">Burgers Sold/sec:</span> <span class="stat-number" id="sales">0</span></p>
+          </div>
+          <div class="row">
+            <p><span id="unsoldBurgersLabel">Unsold Burgers:</span> <span class="stat-number" id="inventory">0</span></p>
+          </div>
+          <div class="row">
+            <button data-tooltip="Decrease price by $0.05" onclick="adjustPrice(-0.05)">Lower Price</button>
+            <button data-tooltip="Increase price by $0.05" onclick="adjustPrice(0.05)">Raise Price</button>
+            <p><span id="priceLabel">Price:</span> $<span class="stat-number" id="price">1.25</span></p>
+          </div>
+          <div class="row">
+            <p><span id="publicDemandLabel">Public Demand:</span> <span class="stat-number" id="demand">150</span> units/sec</p>
+          </div>
+          <div class="row">
+            <button id="upgradeMarketingButton" data-tooltip="Boost demand by 5 units per level" onclick="upgradeMarketing()">Upgrade Marketing</button>
+            <p><span id="marketingLabel">Marketing Level:</span> <span class="stat-number" id="marketing">1</span> (Cost: $<span class="stat-number" id="marketingCost">100.00</span>)</p>
+          </div>
+        </div>
+        <div class="section" id="manufacturingSection">
+          <h3 id="manufacturingHeader">Manufacturing</h3>
+          <div class="row">
+            <p><span id="autoProductionLabel">Auto Production:</span> <span class="stat-number" id="cps">0</span> burgers/sec</p>
+          </div>
+          <div class="row">
+            <button id="buyPattiesButton" data-tooltip="Buy 1000 patties; price rises with inflation" onclick="buyPatties()">Buy Patties</button>
+            <p><span id="pattiesLabel">Patties:</span> <span class="stat-number" id="patties">1000</span> (Cost: $<span class="stat-number" id="pattiesCost">20.00</span> per 1000)</p>
+          </div>
+          <div class="row">
+            <button id="buyAutoChefButton" data-tooltip="Hire an AutoChef for automatic burger production" onclick="buyAutoChef()">Hire AutoChef</button>
+            <p><span id="autoChefsLabel">AutoChefs:</span> <span class="stat-number" id="autoChefs">0</span> (Cost: $<span class="stat-number" id="autoChefCost">50.00</span>)</p>
+          </div>
+        </div>
+        <div class="section" id="financeSection">
+          <h3 id="financeHeader">Finance</h3>
+          <div class="row">
+            <button id="emergencyLoanButton" data-tooltip="Receive $1000 but increase inflation permanently by 0.50%" onclick="takeEmergencyLoan()">Take Emergency Loan</button>
+            <p><span id="loanInflationLabel">Loan Inflation:</span> <span class="stat-number" id="loanInflationDisplay">0.00</span>%</p>
+          </div>
+        </div>
+      </div>
+      <div id="rightColumn">
+        <div class="section" id="upgradesSection">
+          <h3 id="upgradesHeader">Upgrades & Investments</h3>
+          <div class="row">
+            <button id="upgradeResearchButton" data-tooltip="Each level increases AutoChef efficiency by 10%" onclick="upgradeResearchEfficiency()">Research Efficiency</button>
+            <p><span id="researchLabel">Efficiency Level:</span> <span class="stat-number" id="researchLevel">0</span> (Cost: $<span class="stat-number" id="researchCost">200.00</span>)</p>
+          </div>
+          <div class="row">
+            <button id="launchAdButton" data-tooltip="Each level increases base demand by 5%" onclick="launchAdCampaign()">Launch Ad Campaign</button>
+            <p><span id="adCampaignLabel">Ad Campaign Level:</span> <span class="stat-number" id="adLevel">0</span> (Cost: $<span class="stat-number" id="adCost">300.00</span>)</p>
+          </div>
+          <div class="row">
+            <button id="supplyChainButton" data-tooltip="Each level reduces inflation by 10%" onclick="upgradeSupplyChain()">Supply Chain Optimization</button>
+            <p><span id="supplyChainLabel">Supply Chain Level:</span> <span class="stat-number" id="supplyChainLevel">0</span> (Cost: $<span class="stat-number" id="supplyChainCost">500.00</span>)</p>
+          </div>
+          <div class="row">
+            <button id="franchiseButton" data-tooltip="Each level increases revenue by 10%" onclick="upgradeFranchise()">Expand Franchise</button>
+            <p><span id="franchiseLabel">Franchise Level:</span> <span class="stat-number" id="franchiseLevel">0</span> (Cost: $<span class="stat-number" id="franchiseCost">1000.00</span>)</p>
+          </div>
+          <div class="row">
+            <button id="equipmentButton" data-tooltip="Each level boosts AutoChef output by 5%" onclick="upgradeEquipment()">Upgrade Equipment</button>
+            <p><span id="equipmentLabel">Equipment Level:</span> <span class="stat-number" id="equipmentLevel">0</span> (Cost: $<span class="stat-number" id="equipmentCost">800.00</span>)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Graphs -->
+  <div id="graphContainer" class="container graphs" style="display: none;">
+    <h2 id="graphHeader">Game Graphs</h2>
+    <canvas id="fundsChart"></canvas>
+    <canvas id="cheeseburgersChart"></canvas>
+    <canvas id="pattiesCostChart"></canvas>
+  </div>
+
+  <!-- Video Tabs -->
+  <!-- Right Video Tab -->
+  <div id="videoTab">
+    <div id="videoContent">
+      <iframe src="https://www.youtube.com/embed/zZ7AimPACzc?autoplay=1&amp;loop=1&amp;modestbranding=1&amp;mute=1&amp;rel=0&amp;iv_load_policy=3&amp;controls=0&amp;disablekb=1&amp;playlist=zZ7AimPACzc" width="560" height="315" title="Subway surfers 1 hour Gameplay no commentary free to use" frameborder="0" allowfullscreen></iframe>
+    </div>
+    <button id="videoToggle">◀</button>
+  </div>
+  <!-- Left Video Tab -->
+  <div id="videoTabLeft">
+    <div id="videoContentLeft">
+      <iframe src="https://www.youtube.com/embed/s600FYgI5-s?autoplay=1&amp;loop=1&amp;modestbranding=1&amp;mute=1&amp;rel=0&amp;iv_load_policy=3&amp;controls=0&amp;disablekb=1&amp;playlist=s600FYgI5-s" width="560" height="315" title="Subway surfers 1 hour Gameplay no commentary free to use" frameborder="0" allowfullscreen></iframe>
+    </div>
+    <button id="videoToggleLeft">▶</button>
+  </div>
+  <!-- Bottom Left Video Tab -->
+  <div id="videoTabBottomLeft">
+    <div id="videoContentBottomLeft">
+      <iframe src="https://www.youtube.com/embed/VS3D8bgYhf4?autoplay=1&amp;loop=1&amp;modestbranding=1&amp;mute=1&amp;rel=0&amp;iv_load_policy=3&amp;controls=0&amp;disablekb=1&amp;playlist=VS3D8bgYhf4" width="1920" height="1080" title="Subway surfers 1 hour Gameplay no commentary free to use" frameborder="0" allowfullscreen></iframe>
+    </div>
+    <button id="videoToggleBottomLeft">▲</button>
+  </div>
+  <!-- Bottom Right Video Tab -->
+  <div id="videoTabBottomRight">
+    <div id="videoContentBottomRight">
+      <iframe src="https://www.youtube.com/embed/4sEcfGHc5QE?autoplay=1&amp;loop=1&amp;modestbranding=1&amp;mute=1&amp;rel=0&amp;iv_load_policy=3&amp;controls=0&amp;disablekb=1&amp;CC=0&amp;playlist=4sEcfGHc5QE" width="1920" height="1080" title="INTRODUCING POOKIE - Talk Tuah Ep 10 with Jake Paul" frameborder="0" allowfullscreen></iframe>
+    </div>
+    <button id="videoToggleBottomRight">▲</button>
+  </div>
+
+  <script>
+    // Side Video Tab Toggle
+    const videoTab = document.getElementById('videoTab');
+    const videoToggle = document.getElementById('videoToggle');
+    const videoTabLeft = document.getElementById('videoTabLeft');
+    const videoToggleLeft = document.getElementById('videoToggleLeft');
+
+    videoToggle.addEventListener('click', () => {
+      if (videoTab.classList.contains('open')) {
+        videoTab.classList.remove('open');
+        videoToggle.innerText = '◀';
+      } else {
+        videoTab.classList.add('open');
+        videoToggle.innerText = '▶';
+      }
+    });
+    videoToggleLeft.addEventListener('click', () => {
+      if (videoTabLeft.classList.contains('open')) {
+        videoTabLeft.classList.remove('open');
+        videoToggleLeft.innerText = '▶';
+      } else {
+        videoTabLeft.classList.add('open');
+        videoToggleLeft.innerText = '◀';
+      }
+    });
+
+    // Bottom Video Tab Toggles
+    const videoTabBottomLeft = document.getElementById('videoTabBottomLeft');
+    const videoToggleBottomLeft = document.getElementById('videoToggleBottomLeft');
+    const videoTabBottomRight = document.getElementById('videoTabBottomRight');
+    const videoToggleBottomRight = document.getElementById('videoToggleBottomRight');
+
+    videoToggleBottomLeft.addEventListener('click', () => {
+      if (videoTabBottomLeft.classList.contains('open')) {
+        videoTabBottomLeft.classList.remove('open');
+        videoToggleBottomLeft.innerText = '▲';
+      } else {
+        videoTabBottomLeft.classList.add('open');
+        videoToggleBottomLeft.innerText = '▼';
+      }
+    });
+    videoToggleBottomRight.addEventListener('click', () => {
+      if (videoTabBottomRight.classList.contains('open')) {
+        videoTabBottomRight.classList.remove('open');
+        videoToggleBottomRight.innerText = '▲';
+      } else {
+        videoTabBottomRight.classList.add('open');
+        videoToggleBottomRight.innerText = '▼';
+      }
+    });
+
+    // Game Variables
+    let cheeseburgers = 0;
+    let funds = 100.00;
+    let inventory = 0;
+    let price = 1.25;
+    let demand = 150;
+    let marketingLevel = 1;
+    let marketingCost = 100;
+    let researchLevel = 0;
+    let researchCost = 200;
+    let efficiencyMultiplier = 1.0;
+    let adLevel = 0;
+    let adCost = 300;
+    let adMultiplier = 1.0;
+    let supplyChainLevel = 0;
+    let supplyChainCost = 500;
+    let franchiseLevel = 0;
+    let franchiseCost = 1000;
+    let equipmentLevel = 0;
+    let equipmentCost = 800;
+    let equipmentMultiplier = 1.0;
+    let loanInflation = 0;
+    
+    function updateDemand() {
+      demand = Math.max(0, (150 * adMultiplier) - 200 * (price - 1.25) + ((marketingLevel - 1) * 5));
+    }
+    updateDemand();
+    
+    let patties = 1000;
+    let pattiesCost = 20;
+    let autoChefs = 0;
+    let autoChefCost = 50;
+    let cps = 0;
+    let revenue = 0;
+    let sales = 0;
+    const baseInflationRate = 0.001;
+    function effectiveInflationRate() {
+      return baseInflationRate * Math.max(0.001, (1 - supplyChainLevel * 0.1)) + loanInflation;
+    }
+    let gameTime = 0;
+    const maxDataPoints = 600;
+    let timeData = [];
+    let fundsData = [];
+    let cheeseburgersData = [];
+    let pattiesCostData = [];
+
+    function updateText(elementId, newValue, decimals) {
+      const el = document.getElementById(elementId);
+      const formattedValue = (decimals !== undefined ? newValue.toFixed(decimals) : newValue).toString();
+      if (el.innerText !== formattedValue) {
+        el.innerText = formattedValue;
+        el.classList.add('pop');
+        setTimeout(() => { el.classList.remove('pop'); }, 300);
+      }
+    }
+    
+    function makeCheeseburger() {
+      if (patties > 0) {
+        cheeseburgers++;
+        inventory++;
+        patties--;
+        updateUI();
+      }
+    }
+    function adjustPrice(amount) {
+      price = Math.max(0.01, price + amount);
+      updateDemand();
+      updateUI();
+    }
+    function upgradeMarketing() {
+      if (funds >= marketingCost) {
+        funds -= marketingCost;
+        marketingLevel++;
+        marketingCost *= 1.5;
+        updateDemand();
+        updateUI();
+      }
+    }
+    function buyPatties() {
+      if (funds >= pattiesCost) {
+        funds -= pattiesCost;
+        patties += 1000;
+        pattiesCost *= 1.02;
+        updateUI();
+      }
+    }
+    function buyAutoChef() {
+      if (funds >= autoChefCost) {
+        funds -= autoChefCost;
+        autoChefs++;
+        cps = Math.floor(autoChefs * efficiencyMultiplier * equipmentMultiplier);
+        autoChefCost *= 1.20;
+        updateUI();
+      }
+    }
+    function upgradeResearchEfficiency() {
+      if (funds >= researchCost) {
+        funds -= researchCost;
+        researchLevel++;
+        efficiencyMultiplier = 1 + researchLevel * 0.10;
+        researchCost *= 1.7;
+        cps = Math.floor(autoChefs * efficiencyMultiplier * equipmentMultiplier);
+        updateUI();
+      }
+    }
+    function launchAdCampaign() {
+      if (funds >= adCost) {
+        funds -= adCost;
+        adLevel++;
+        adMultiplier = 1 + adLevel * 0.05;
+        adCost *= 2.0;
+        updateDemand();
+        updateUI();
+      }
+    }
+    function upgradeSupplyChain() {
+      if (funds >= supplyChainCost) {
+        funds -= supplyChainCost;
+        supplyChainLevel++;
+        supplyChainCost *= 2.0;
+        updateUI();
+      }
+    }
+    function upgradeFranchise() {
+      if (funds >= franchiseCost) {
+        funds -= franchiseCost;
+        franchiseLevel++;
+        franchiseCost *= 2.0;
+        updateUI();
+      }
+    }
+    function upgradeEquipment() {
+      if (funds >= equipmentCost) {
+        funds -= equipmentCost;
+        equipmentLevel++;
+        equipmentCost *= 1.8;
+        equipmentMultiplier = 1 + equipmentLevel * 0.05;
+        cps = Math.floor(autoChefs * efficiencyMultiplier * equipmentMultiplier);
+        updateUI();
+      }
+    }
+    function takeEmergencyLoan() {
+      funds += 1000;
+      loanInflation += 0.005;
+      updateUI();
+    }
+    function sellBurgers() {
+      let revenueMultiplier = 1 + franchiseLevel * 0.10;
+      let sellRate = Math.min(demand, inventory);
+      let earnings = sellRate * price * revenueMultiplier;
+      funds += earnings;
+      inventory -= sellRate;
+      revenue = earnings;
+      sales = sellRate;
+      updateUI();
+    }
+    function autoProduce() {
+      let production = Math.min(Math.floor(autoChefs * efficiencyMultiplier * equipmentMultiplier), patties);
+      cheeseburgers += production;
+      inventory += production;
+      patties -= production;
+      updateUI();
+    }
+    
+    const fundsChartCtx = document.getElementById('fundsChart').getContext('2d');
+    const fundsChart = new Chart(fundsChartCtx, {
+      type: 'line',
+      data: {
+        labels: timeData,
+        datasets: [{
+          label: 'Funds ($)',
+          data: fundsData,
+          borderColor: '#8e24aa',
+          backgroundColor: 'rgba(142, 36, 170, 0.3)',
+          fill: true,
+          tension: 0.2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          x: { title: { display: true, text: 'Time (s)' }, ticks: { font: { size: 12 } } },
+          y: { title: { display: true, text: 'Funds ($)' }, ticks: { font: { size: 12 } } }
+        },
+        plugins: { legend: { labels: { font: { size: 12 } } } }
+      }
+    });
+    const burgersChartCtx = document.getElementById('cheeseburgersChart').getContext('2d');
+    const burgersChart = new Chart(burgersChartCtx, {
+      type: 'line',
+      data: {
+        labels: timeData,
+        datasets: [{
+          label: 'Cheeseburgers',
+          data: cheeseburgersData,
+          borderColor: '#6a1b9a',
+          backgroundColor: 'rgba(106, 27, 154, 0.3)',
+          fill: true,
+          tension: 0.2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          x: { title: { display: true, text: 'Time (s)' }, ticks: { font: { size: 12 } } },
+          y: { title: { display: true, text: 'Cheeseburgers' }, ticks: { font: { size: 12 } } }
+        },
+        plugins: { legend: { labels: { font: { size: 12 } } } }
+      }
+    });
+    const pattiesCostCtx = document.getElementById('pattiesCostChart').getContext('2d');
+    const pattiesCostChart = new Chart(pattiesCostCtx, {
+      type: 'line',
+      data: {
+        labels: timeData,
+        datasets: [{
+          label: 'Patties Cost ($/1000)',
+          data: pattiesCostData,
+          borderColor: '#4a148c',
+          backgroundColor: 'rgba(74, 20, 140, 0.3)',
+          fill: true,
+          tension: 0.2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          x: { title: { display: true, text: 'Time (s)' }, ticks: { font: { size: 12 } } },
+          y: { title: { display: true, text: 'Cost ($)' }, ticks: { font: { size: 12 } } }
+        },
+        plugins: { legend: { labels: { font: { size: 12 } } } }
+      }
+    });
+    
+    function updateUI() {
+      updateText("cheeseburgers", cheeseburgers);
+      updateText("funds", funds, 2);
+      updateText("price", price, 2);
+      updateText("inventory", Math.floor(inventory));
+      updateText("demand", Math.floor(demand));
+      updateText("marketing", marketingLevel);
+      updateText("marketingCost", marketingCost, 2);
+      updateText("patties", patties);
+      updateText("pattiesCost", pattiesCost, 2);
+      updateText("autoChefs", autoChefs);
+      updateText("autoChefCost", autoChefCost, 2);
+      updateText("cps", cps);
+      updateText("revenue", revenue, 2);
+      updateText("sales", sales);
+      updateText("researchLevel", researchLevel);
+      updateText("researchCost", researchCost, 2);
+      updateText("adLevel", adLevel);
+      updateText("adCost", adCost, 2);
+      updateText("supplyChainLevel", supplyChainLevel);
+      updateText("supplyChainCost", supplyChainCost, 2);
+      updateText("franchiseLevel", franchiseLevel);
+      updateText("franchiseCost", franchiseCost, 2);
+      updateText("equipmentLevel", equipmentLevel);
+      updateText("equipmentCost", equipmentCost, 2);
+      updateText("inflationRateDisplay", effectiveInflationRate() * 100, 2);
+      updateText("loanInflationDisplay", loanInflation * 100, 2);
+      
+      document.getElementById("upgradeMarketingButton").disabled = (funds < marketingCost);
+      document.getElementById("buyPattiesButton").disabled = (funds < pattiesCost);
+      document.getElementById("buyAutoChefButton").disabled = (funds < autoChefCost);
+      document.getElementById("makeCheeseburgerButton").disabled = (patties <= 0);
+      document.getElementById("upgradeResearchButton").disabled = (funds < researchCost);
+      document.getElementById("launchAdButton").disabled = (funds < adCost);
+      document.getElementById("supplyChainButton").disabled = (funds < supplyChainCost);
+      document.getElementById("franchiseButton").disabled = (funds < franchiseCost);
+      document.getElementById("equipmentButton").disabled = (funds < equipmentCost);
+    }
+    
+    let gameInterval;
+    function startGame() {
+      document.getElementById("startScreen").style.display = "none";
+      document.getElementById("gameContainer").style.display = "block";
+      document.getElementById("graphContainer").style.display = "block";
+      gameInterval = setInterval(() => {
+        let inflation = effectiveInflationRate();
+        pattiesCost *= (1 + inflation);
+        autoChefCost *= (1 + inflation);
+        marketingCost *= (1 + inflation);
+        researchCost *= (1 + inflation);
+        adCost *= (1 + inflation);
+        supplyChainCost *= (1 + inflation);
+        franchiseCost *= (1 + inflation);
+        equipmentCost *= (1 + inflation);
+        autoProduce();
+        sellBurgers();
+        gameTime++;
+        timeData.push(gameTime);
+        fundsData.push(funds);
+        cheeseburgersData.push(cheeseburgers);
+        pattiesCostData.push(pattiesCost);
+        if (timeData.length > maxDataPoints) {
+          timeData.shift();
+          fundsData.shift();
+          cheeseburgersData.shift();
+          pattiesCostData.shift();
+        }
+        fundsChart.update();
+        burgersChart.update();
+        pattiesCostChart.update();
+      }, 1000);
+    }
+    
+    document.getElementById("startButton").addEventListener("click", startGame);
+    updateUI();
+  </script>
+</body>
+</html>
